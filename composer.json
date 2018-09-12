@@ -1,0 +1,17 @@
+{
+    "name": "hdb/auth",
+    "description": "authTest",
+    "type": "lib",
+    "authors": [
+        {
+            "name": "debiao huang",
+            "email": "debiao@qq.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Hdb\\Auth\\":"src/Hdb/Auth"
+        }
+    }
+}
