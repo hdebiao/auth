@@ -40,5 +40,11 @@ class Auth
 
     }
 
+    public function getUser()
+    {
+        
+    }
+
+
 
 }
