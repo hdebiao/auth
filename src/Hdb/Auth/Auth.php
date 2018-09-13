@@ -13,7 +13,7 @@ class Auth
     }
 
     /**
-     * 链接数据库
+     * 连接数据库
      * @param $config
      * @return bool|\PDO
      */
@@ -73,19 +73,100 @@ class Auth
         return false;
     }
 
+    /**
+     * 增加规则
+     * @param $ruleData
+     * @param $uid
+     * @return bool
+     */
     public function addRule($ruleData, $uid)
     {
-
+        $checkRule = self::checkRule('addRule', $uid);
+        if (!$checkRule) {
+            return false;
+        }
+        $name = $ruleData['name'];
+        $title = $ruleData['title'];
+        $createUserId = $uid;
+        if (mb_strlen($name, 'utf-8') > 255) {
+            return false;
+        }
+        if (mb_strlen($title, 'utf-8') > 100) {
+            return false;
+        }
+        $sql = 'INSERT INTO auth.auth_rule ( name, title, creatUserId, status) VALUES (:name,:title,:createUserId,1)';
+        $sth = $this->db->prepare($sql);
+        $sth->execute(array('name' => $name,'title'=> $title,'createUserId' => $createUserId));
+        return true;
     }
 
-    public function editRule($ruleData, $uid)
+    /**
+     * 编辑规则
+     * @param $editRuleData
+     * @param $uid
+     * @return bool
+     */
+    public function editRule($editRuleData, $uid)
     {
+        $checkRule = self::checkRule('editRule', $uid);
+        if (!$checkRule) {
+            return false;
+        }
+        $ruleId = (int)$editRuleData['id'];
+        $ruleData = self::getRuleById($ruleId);
+        if (empty($ruleData)) {
+            return false;
+        }
 
+        if ($ruleData['createUserId'] !== (int)$uid) {
+            return false;
+        }
+
+        $name = $ruleData['name'];
+        $title = $ruleData['title'];
+        $status = $ruleData['status'];
+        if (mb_strlen($name, 'utf-8') > 255) {
+            return false;
+        }
+        if (mb_strlen($title, 'utf-8') > 100) {
+            return false;
+        }
+
+        $sql = 'update auth_rule set name=:name,title=:title,status=:status where id=:id';
+        $sth = $this->db->prepare($sql);
+        $sth->execute(array('id' => $ruleId,'name' =>$name,'title' => $title,'status' => $status));
+
+        return true;
     }
 
+    /**
+     * 删除规则
+     * @param $ruleId
+     * @param $uid
+     * @return bool
+     */
     public function deleteRule($ruleId, $uid)
     {
 
+        $ruleData = self::getRuleById($ruleId);
+        if (empty($ruleData)) {
+            return false;
+        }
+
+        if ($ruleData['createUserId'] !== (int)$uid) {
+            return false;
+        }
+
+        $checkRule = self::checkRule('deleteRule', $uid);
+
+        if (!$checkRule) {
+            return false;
+        }
+        $sql = 'delete from auth_rule where id=:id';
+        $sth = $this->db->prepare($sql);
+        $sth->execute(array('id' => (int)$ruleId));
+        $sth->fetchAll(\PDO::FETCH_ASSOC);
+        return true;
     }
 
     /**
@@ -95,6 +176,7 @@ class Auth
      */
     public function getUser($uid)
     {
+        $uid = (int)$uid;
         $sql = 'select * from auth_user where id=:uid';
         $sth = $this->db->prepare($sql);
         $sth->execute(array('uid' => $uid));
@@ -115,6 +197,7 @@ class Auth
      */
     public function getRule($name)
     {
+        $name = addslashes($name);
         $sql = 'select * from auth_rule where name=:name';
         $sth = $this->db->prepare($sql);
         $sth->execute(array('name' => $name));
@@ -126,6 +209,27 @@ class Auth
         }
         return $data;
     }
+
+    /**
+     * 根据id获取规则
+     * @param $id
+     * @return array
+     */
+    public function getRuleById($id)
+    {
+        $id = intval($id);
+        $sql = 'select * from auth_rule where id=:id';
+        $sth = $this->db->prepare($sql);
+        $sth->execute(array('id' => $id));
+        $data = $sth->fetchAll(\PDO::FETCH_ASSOC);
+        if (!empty($data)) {
+            $data = $data[0];
+        } else {
+            $data = array();
+        }
+        return $data;
+    }
+
 
     /**
      *根据组id获取多个规则
